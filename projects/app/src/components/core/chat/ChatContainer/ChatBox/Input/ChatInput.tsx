@@ -108,6 +108,7 @@ const ChatInput = ({
 
   /* whisper init */
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const touchStartTimeRef = useRef(0);
   const {
     isSpeaking,
     isTransCription,
@@ -118,6 +119,7 @@ const ChatInput = ({
     stream
   } = useSpeech({ appId, ...outLinkAuthData });
   const onWhisperRecord = useCallback(() => {
+    touchStartTimeRef.current = Date.now();
     const finishWhisperTranscription = (text: string) => {
       if (!text) return;
       if (whisperConfig?.autoSend) {
@@ -132,7 +134,12 @@ const ChatInput = ({
       }
     };
     if (isSpeaking) {
-      return stopSpeak();
+      const touchDuration = Date.now() - touchStartTimeRef.current;
+      if (touchDuration < 1000) {
+        stopSpeak(false, true);
+      } else {
+        return stopSpeak();
+      }
     }
     startSpeak(finishWhisperTranscription);
   }, [
@@ -303,7 +310,7 @@ const ChatInput = ({
                   zIndex: 0
                 }}
               />
-              {isSpeaking && (
+              {isSpeaking && isPc && (
                 <MyTooltip label={t('common:core.chat.Cancel Speak')}>
                   <Flex
                     mr={2}
@@ -325,11 +332,7 @@ const ChatInput = ({
                   </Flex>
                 </MyTooltip>
               )}
-              <MyTooltip
-                label={
-                  isSpeaking ? t('common:core.chat.Finish Speak') : t('common:core.chat.Record')
-                }
-              >
+              <MyTooltip label={isSpeaking && isPc ? t('common:core.chat.Finish Speak') : ''}>
                 <Flex
                   mr={2}
                   alignItems={'center'}
@@ -341,9 +344,32 @@ const ChatInput = ({
                   cursor={'pointer'}
                   _hover={{ bg: '#F5F5F8' }}
                   onClick={onWhisperRecord}
+                  display={isPc ? 'flex' : 'none'}
                 >
                   <MyIcon
-                    name={isSpeaking ? 'core/chat/finishSpeak' : 'core/chat/recordFill'}
+                    name={isSpeaking && isPc ? 'core/chat/finishSpeak' : 'core/chat/recordFill'}
+                    width={['20px', '22px']}
+                    height={['20px', '22px']}
+                    color={isSpeaking ? 'primary.500' : 'myGray.600'}
+                  />
+                </Flex>
+                <Flex
+                  mr={2}
+                  alignItems={'center'}
+                  justifyContent={'center'}
+                  flexShrink={0}
+                  h={['26px', '32px']}
+                  w={['26px', '32px']}
+                  borderRadius={'md'}
+                  cursor={'pointer'}
+                  _hover={{ bg: '#F5F5F8' }}
+                  onTouchStart={onWhisperRecord}
+                  onTouchEnd={onWhisperRecord}
+                  display={isPc ? 'none' : 'flex'}
+                >
+                  <MyIcon
+                    userSelect={'none'}
+                    name={isSpeaking && isPc ? 'core/chat/finishSpeak' : 'core/chat/recordFill'}
                     width={['20px', '22px']}
                     height={['20px', '22px']}
                     color={isSpeaking ? 'primary.500' : 'myGray.600'}
@@ -353,7 +379,7 @@ const ChatInput = ({
             </>
           )}
           {/* send and stop icon */}
-          {isSpeaking ? (
+          {isSpeaking && isPc ? (
             <Box color={'#5A646E'} w={'36px'} textAlign={'right'} whiteSpace={'nowrap'}>
               {speakingTimeString}
             </Box>
@@ -391,7 +417,7 @@ const ChatInput = ({
                   color={'gray.500'}
                 />
               ) : (
-                <MyTooltip label={t('common:core.chat.Send Message')}>
+                <MyTooltip label={isPc ? t('common:core.chat.Send Message') : ''}>
                   <MyIcon
                     name={'core/chat/sendFill'}
                     width={['18px', '20px']}

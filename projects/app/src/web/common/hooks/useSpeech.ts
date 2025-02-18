@@ -159,7 +159,11 @@ export const useSpeech = (props?: OutLinkChatAuthProps & { appId?: string }) => 
     }
   };
 
-  const stopSpeak = (cancel = false) => {
+  const stopSpeak = (cancel = false, cancelStatus = false) => {
+    if (cancelStatus) {
+      setIsTransCription(false);
+      setIsSpeaking(false);
+    }
     cancelWhisperSignal.current = cancel;
     if (mediaRecorder.current) {
       mediaRecorder.current?.stop();
