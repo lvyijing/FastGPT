@@ -7,8 +7,8 @@ const ChatAvatar = ({ src, type }: { src?: string; type: 'Human' | 'AI' }) => {
   const theme = useTheme();
   return (
     <Box
-      w={['28px', '34px']}
-      h={['28px', '34px']}
+      w={['60px', '34px']}
+      h={['60px', '34px']}
       p={'2px'}
       borderRadius={'sm'}
       border={theme.borders.base}

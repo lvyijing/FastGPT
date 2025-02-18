@@ -140,7 +140,7 @@ const ResponseTags = ({
                 <MyTooltip key={item.collectionId} label={t('common:core.chat.quote.Read Quote')}>
                   <Flex
                     alignItems={'center'}
-                    fontSize={'xs'}
+                    fontSize={'sm'}
                     border={'sm'}
                     py={1.5}
                     px={2}
