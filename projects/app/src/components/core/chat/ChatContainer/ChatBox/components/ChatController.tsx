@@ -3,6 +3,7 @@ import { Flex, FlexProps, css, useTheme } from '@chakra-ui/react';
 import { ChatSiteItemType } from '@fastgpt/global/core/chat/type';
 import MyTooltip from '@fastgpt/web/components/common/MyTooltip';
 import React, { useMemo } from 'react';
+import removeMarkdown from 'remove-markdown';
 import { useTranslation } from 'next-i18next';
 import MyIcon from '@fastgpt/web/components/common/Icon';
 import { formatChatValue2InputType } from '../utils';
@@ -147,7 +148,7 @@ const ChatController = ({
                   setAudioPlayingChatId(chat.dataId);
                   const response = await playAudioByText({
                     buffer: chat.ttsBuffer,
-                    text: chatText
+                    text: removeMarkdown(chatText)
                   });
 
                   if (!setChatRecords || !response.buffer) return;

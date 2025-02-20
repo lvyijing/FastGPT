@@ -1,7 +1,7 @@
 import { useSpeech } from '@/web/common/hooks/useSpeech';
 import { useSystemStore } from '@/web/common/system/useSystemStore';
 import { Box, Flex, Spinner, Textarea } from '@chakra-ui/react';
-import React, { useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useRef, useEffect, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'next-i18next';
 import MyTooltip from '@fastgpt/web/components/common/MyTooltip';
 import MyIcon from '@fastgpt/web/components/common/Icon';
@@ -18,6 +18,7 @@ import FilePreview from '../../components/FilePreview';
 import { useFileUpload } from '../hooks/useFileUpload';
 import ComplianceTip from '@/components/common/ComplianceTip/index';
 import { useToast } from '@fastgpt/web/hooks/useToast';
+import { useMount } from 'ahooks';
 
 const InputGuideBox = dynamic(() => import('./InputGuideBox'));
 
@@ -109,6 +110,7 @@ const ChatInput = ({
   /* whisper init */
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const touchStartTimeRef = useRef(0);
+  const [isVoice, setIsVoice] = useState(true);
   const {
     isSpeaking,
     isTransCription,
@@ -119,7 +121,6 @@ const ChatInput = ({
     stream
   } = useSpeech({ appId, ...outLinkAuthData });
   const onWhisperRecord = useCallback(() => {
-    touchStartTimeRef.current = Date.now();
     const finishWhisperTranscription = (text: string) => {
       if (!text) return;
       if (whisperConfig?.autoSend) {
@@ -134,12 +135,7 @@ const ChatInput = ({
       }
     };
     if (isSpeaking) {
-      const touchDuration = Date.now() - touchStartTimeRef.current;
-      if (touchDuration < 1000) {
-        stopSpeak(false, true);
-      } else {
-        return stopSpeak();
-      }
+      return stopSpeak();
     }
     startSpeak(finishWhisperTranscription);
   }, [
@@ -153,6 +149,41 @@ const ChatInput = ({
     stopSpeak,
     whisperConfig?.autoSend
   ]);
+  const finishWhisperTranscription = (text: string) => {
+    if (!text) return;
+    if (whisperConfig?.autoSend) {
+      onSendMessage({
+        text,
+        files: fileList,
+        autoTTSResponse
+      });
+      replaceFiles([]);
+    } else {
+      resetInputVal({ text });
+    }
+  };
+  const handleTouchStart = useCallback(() => {
+    touchStartTimeRef.current = Date.now();
+    startSpeak(finishWhisperTranscription);
+  }, [
+    autoTTSResponse,
+    fileList,
+    isSpeaking,
+    onSendMessage,
+    replaceFiles,
+    resetInputVal,
+    startSpeak,
+    whisperConfig?.autoSend,
+    touchStartTimeRef,
+    Date.now
+  ]);
+  const handleTouchEnd = useCallback(() => {
+    if (Date.now() - touchStartTimeRef.current < 300) {
+      stopSpeak(true);
+    } else {
+      stopSpeak();
+    }
+  }, [stopSpeak, touchStartTimeRef, Date.now]);
   useEffect(() => {
     if (!stream) {
       return;
@@ -171,11 +202,30 @@ const ChatInput = ({
     renderCurve();
   }, [renderAudioGraph, stream]);
 
+  useEffect(() => {
+    const checkMicrophonePermission = async () => {
+      try {
+        const mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaStream.getTracks().forEach((track) => track.stop());
+      } catch (err) {
+        console.error('麦克风权限未开启', err);
+      }
+    };
+    if (whisperConfig?.open) {
+      checkMicrophonePermission();
+    }
+    if (!isPc && whisperConfig?.open) {
+      setIsVoice(true);
+    } else {
+      setIsVoice(false);
+    }
+  }, [whisperConfig?.open]);
+
   const RenderTranslateLoading = useMemo(
     () => (
       <Flex
         position={'absolute'}
-        top={0}
+        top={-1}
         bottom={0}
         left={0}
         right={0}
@@ -195,123 +245,187 @@ const ChatInput = ({
 
   const RenderTextarea = useMemo(
     () => (
-      <Flex alignItems={'flex-end'} mt={fileList.length > 0 ? 1 : 0} pl={[2, 4]}>
-        {/* file selector */}
-        {(showSelectFile || showSelectImg) && (
-          <Flex
-            h={'22px'}
-            alignItems={'center'}
-            justifyContent={'center'}
-            cursor={'pointer'}
-            transform={'translateY(1px)'}
-            onClick={() => {
-              if (isSpeaking) return;
-              onOpenSelectFile();
+      <>
+        <Flex
+          height={'30px'}
+          alignItems={'center'}
+          pl={'10px'}
+          pr={'10px'}
+          display={isVoice ? 'flex' : 'none'}
+        >
+          <Box
+            flex={1}
+            textAlign={'center'}
+            fontWeight={'bold'}
+            color={isSpeaking ? 'white' : 'myGray.900'}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            userSelect={'none'}
+            onContextMenu={(e: React.MouseEvent) => {
+              e.preventDefault();
             }}
           >
-            <MyTooltip label={selectFileLabel}>
-              <MyIcon name={selectFileIcon as any} w={'18px'} color={'myGray.600'} />
-            </MyTooltip>
-            <File onSelect={(files) => onSelectFile({ files })} />
-          </Flex>
-        )}
+            {isSpeaking ? t('common:core.chat.Release Send') : t('common:core.chat.Hold Speak')}
+          </Box>
+          <MyIcon
+            display={isSpeaking ? 'none' : 'block'}
+            name={'core/chat/chatLight'}
+            width={'30px'}
+            height={'30px'}
+            onClick={() => {
+              setIsVoice(!isVoice);
+            }}
+          />
+        </Flex>
+        <Flex
+          height={'30px'}
+          alignItems={'flex-end'}
+          mt={fileList.length > 0 ? 1 : 0}
+          pl={[2, 4]}
+          display={isVoice ? 'none' : 'flex'}
+        >
+          {/* file selector */}
+          {(showSelectFile || showSelectImg) && (
+            <Flex
+              h={'22px'}
+              alignItems={'center'}
+              justifyContent={'center'}
+              cursor={'pointer'}
+              transform={'translateY(1px)'}
+              onClick={() => {
+                if (isSpeaking) return;
+                onOpenSelectFile();
+              }}
+            >
+              <MyTooltip label={selectFileLabel}>
+                <MyIcon name={selectFileIcon as any} w={'30px'} color={'myGray.600'} />
+              </MyTooltip>
+              <File onSelect={(files) => onSelectFile({ files })} />
+            </Flex>
+          )}
 
-        {/* input area */}
-        <Textarea
-          ref={TextareaDom}
-          py={0}
-          pl={2}
-          pr={['30px', '48px']}
-          border={'none'}
-          _focusVisible={{
-            border: 'none'
-          }}
-          placeholder={
-            isSpeaking
-              ? t('common:core.chat.Speaking')
-              : isPc
-                ? t('common:core.chat.Type a message')
-                : t('chat:input_placeholder_phone')
-          }
-          resize={'none'}
-          rows={1}
-          height={'22px'}
-          lineHeight={'22px'}
-          maxHeight={'50vh'}
-          maxLength={-1}
-          overflowY={'auto'}
-          whiteSpace={'pre-wrap'}
-          wordBreak={'break-all'}
-          boxShadow={'none !important'}
-          color={'myGray.900'}
-          isDisabled={isSpeaking}
-          value={inputValue}
-          fontSize={['md', 'sm']}
-          onChange={(e) => {
-            const textarea = e.target;
-            textarea.style.height = textareaMinH;
-            textarea.style.height = `${textarea.scrollHeight}px`;
-            setValue('input', textarea.value);
-          }}
-          onKeyDown={(e) => {
-            // enter send.(pc or iframe && enter and unPress shift)
-            const isEnter = e.keyCode === 13;
-            if (isEnter && TextareaDom.current && (e.ctrlKey || e.altKey)) {
-              // Add a new line
-              const index = TextareaDom.current.selectionStart;
-              const val = TextareaDom.current.value;
-              TextareaDom.current.value = `${val.slice(0, index)}\n${val.slice(index)}`;
-              TextareaDom.current.selectionStart = index + 1;
-              TextareaDom.current.selectionEnd = index + 1;
-
-              TextareaDom.current.style.height = textareaMinH;
-              TextareaDom.current.style.height = `${TextareaDom.current.scrollHeight}px`;
-
-              return;
+          {/* input area */}
+          <Textarea
+            ref={TextareaDom}
+            py={0}
+            pl={2}
+            pr={['30px', '48px']}
+            border={'none'}
+            _focusVisible={{
+              border: 'none'
+            }}
+            placeholder={
+              isSpeaking
+                ? t('common:core.chat.Speaking')
+                : isPc
+                  ? t('common:core.chat.Type a message')
+                  : t('chat:input_placeholder_phone')
             }
+            resize={'none'}
+            rows={1}
+            height={'22px'}
+            lineHeight={'22px'}
+            maxHeight={'50vh'}
+            maxLength={-1}
+            overflowY={'auto'}
+            whiteSpace={'pre-wrap'}
+            wordBreak={'break-all'}
+            boxShadow={'none !important'}
+            color={'myGray.900'}
+            isDisabled={isSpeaking}
+            value={inputValue}
+            fontSize={['md', 'sm']}
+            onChange={(e) => {
+              const textarea = e.target;
+              textarea.style.height = textareaMinH;
+              textarea.style.height = `${textarea.scrollHeight}px`;
+              setValue('input', textarea.value);
+            }}
+            onKeyDown={(e) => {
+              // enter send.(pc or iframe && enter and unPress shift)
+              const isEnter = e.keyCode === 13;
+              if (isEnter && TextareaDom.current && (e.ctrlKey || e.altKey)) {
+                // Add a new line
+                const index = TextareaDom.current.selectionStart;
+                const val = TextareaDom.current.value;
+                TextareaDom.current.value = `${val.slice(0, index)}\n${val.slice(index)}`;
+                TextareaDom.current.selectionStart = index + 1;
+                TextareaDom.current.selectionEnd = index + 1;
 
-            // 全选内容
-            // @ts-ignore
-            e.key === 'a' && e.ctrlKey && e.target?.select();
+                TextareaDom.current.style.height = textareaMinH;
+                TextareaDom.current.style.height = `${TextareaDom.current.scrollHeight}px`;
 
-            if ((isPc || window !== parent) && e.keyCode === 13 && !e.shiftKey) {
-              handleSend();
-              e.preventDefault();
-            }
-          }}
-          onPaste={(e) => {
-            const clipboardData = e.clipboardData;
-            if (clipboardData && (showSelectFile || showSelectImg)) {
-              const items = clipboardData.items;
-              const files = Array.from(items)
-                .map((item) => (item.kind === 'file' ? item.getAsFile() : undefined))
-                .filter((file) => {
-                  return file && fileTypeFilter(file);
-                }) as File[];
-              onSelectFile({ files });
-
-              if (files.length > 0) {
-                e.preventDefault();
-                e.stopPropagation();
+                return;
               }
-            }
-          }}
-        />
-        <Flex alignItems={'center'} position={'absolute'} right={[2, 4]} bottom={['10px', '12px']}>
-          {/* voice-input */}
-          {whisperConfig?.open && !inputValue && !isChatting && (
-            <>
-              <canvas
-                ref={canvasRef}
-                style={{
-                  height: '30px',
-                  width: isSpeaking && !isTransCription ? '100px' : 0,
-                  background: 'white',
-                  zIndex: 0
-                }}
-              />
-              {isSpeaking && isPc && (
-                <MyTooltip label={t('common:core.chat.Cancel Speak')}>
+
+              // 全选内容
+              // @ts-ignore
+              e.key === 'a' && e.ctrlKey && e.target?.select();
+
+              if ((isPc || window !== parent) && e.keyCode === 13 && !e.shiftKey) {
+                handleSend();
+                e.preventDefault();
+              }
+            }}
+            onPaste={(e) => {
+              const clipboardData = e.clipboardData;
+              if (clipboardData && (showSelectFile || showSelectImg)) {
+                const items = clipboardData.items;
+                const files = Array.from(items)
+                  .map((item) => (item.kind === 'file' ? item.getAsFile() : undefined))
+                  .filter((file) => {
+                    return file && fileTypeFilter(file);
+                  }) as File[];
+                onSelectFile({ files });
+
+                if (files.length > 0) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }
+              }
+            }}
+          />
+          <Flex
+            alignItems={'center'}
+            position={'absolute'}
+            right={[2, 4]}
+            bottom={['10px', '12px']}
+          >
+            {/* voice-input */}
+            {whisperConfig?.open && !inputValue && !isChatting && (
+              <>
+                <canvas
+                  ref={canvasRef}
+                  style={{
+                    height: '30px',
+                    width: isSpeaking && !isTransCription ? '100px' : 0,
+                    background: 'white',
+                    zIndex: 0
+                  }}
+                />
+                {isSpeaking && isPc && (
+                  <MyTooltip label={t('common:core.chat.Cancel Speak')}>
+                    <Flex
+                      mr={2}
+                      alignItems={'center'}
+                      justifyContent={'center'}
+                      flexShrink={0}
+                      h={['26px', '32px']}
+                      w={['26px', '32px']}
+                      borderRadius={'md'}
+                      cursor={'pointer'}
+                      _hover={{ bg: '#F5F5F8' }}
+                      onClick={() => stopSpeak(true)}
+                    >
+                      <MyIcon
+                        name={'core/chat/cancelSpeak'}
+                        width={['20px', '22px']}
+                        height={['20px', '22px']}
+                      />
+                    </Flex>
+                  </MyTooltip>
+                )}
+                <MyTooltip label={isSpeaking && isPc ? t('common:core.chat.Finish Speak') : ''}>
                   <Flex
                     mr={2}
                     alignItems={'center'}
@@ -322,114 +436,94 @@ const ChatInput = ({
                     borderRadius={'md'}
                     cursor={'pointer'}
                     _hover={{ bg: '#F5F5F8' }}
-                    onClick={() => stopSpeak(true)}
+                    onClick={onWhisperRecord}
+                    display={isPc && whisperConfig?.open ? 'flex' : 'none'}
                   >
                     <MyIcon
-                      name={'core/chat/cancelSpeak'}
+                      name={isSpeaking && isPc ? 'core/chat/finishSpeak' : 'core/chat/recordFill'}
                       width={['20px', '22px']}
                       height={['20px', '22px']}
+                      color={isSpeaking ? 'primary.500' : 'myGray.600'}
+                    />
+                  </Flex>
+                  <Flex
+                    mr={2}
+                    alignItems={'center'}
+                    justifyContent={'center'}
+                    flexShrink={0}
+                    h={['26px', '32px']}
+                    w={['26px', '32px']}
+                    borderRadius={'md'}
+                    cursor={'pointer'}
+                    _hover={{ bg: '#F5F5F8' }}
+                    onClick={() => {
+                      setIsVoice(!isVoice);
+                    }}
+                    display={!isPc && whisperConfig.open ? 'flex' : 'none'}
+                  >
+                    <MyIcon
+                      userSelect={'none'}
+                      name={isSpeaking && isPc ? 'core/chat/finishSpeak' : 'core/chat/recordFill'}
+                      width={'30px'}
+                      height={'30px'}
+                      color={isSpeaking ? 'primary.500' : 'myGray.600'}
                     />
                   </Flex>
                 </MyTooltip>
-              )}
-              <MyTooltip label={isSpeaking && isPc ? t('common:core.chat.Finish Speak') : ''}>
-                <Flex
-                  mr={2}
-                  alignItems={'center'}
-                  justifyContent={'center'}
-                  flexShrink={0}
-                  h={['26px', '32px']}
-                  w={['26px', '32px']}
-                  borderRadius={'md'}
-                  cursor={'pointer'}
-                  _hover={{ bg: '#F5F5F8' }}
-                  onClick={onWhisperRecord}
-                  display={isPc ? 'flex' : 'none'}
-                >
+              </>
+            )}
+            {/* send and stop icon */}
+            {isSpeaking && isPc ? (
+              <Box color={'#5A646E'} w={'36px'} textAlign={'right'} whiteSpace={'nowrap'}>
+                {speakingTimeString}
+              </Box>
+            ) : (
+              <Flex
+                alignItems={'center'}
+                justifyContent={'center'}
+                flexShrink={0}
+                h={['30px']}
+                w={['30px']}
+                borderRadius={'md'}
+                cursor={havInput ? 'pointer' : 'not-allowed'}
+                lineHeight={1}
+                onClick={() => {
+                  if (isChatting) {
+                    return onStop();
+                  }
+                  return handleSend();
+                }}
+              >
+                {isChatting ? (
                   <MyIcon
-                    name={isSpeaking && isPc ? 'core/chat/finishSpeak' : 'core/chat/recordFill'}
-                    width={['20px', '22px']}
-                    height={['20px', '22px']}
-                    color={isSpeaking ? 'primary.500' : 'myGray.600'}
+                    animation={'zoomStopIcon 0.4s infinite alternate'}
+                    width={['30px']}
+                    height={['30px']}
+                    cursor={'pointer'}
+                    name={'stop'}
+                    color={'gray.500'}
                   />
-                </Flex>
-                <Flex
-                  mr={2}
-                  alignItems={'center'}
-                  justifyContent={'center'}
-                  flexShrink={0}
-                  h={['26px', '32px']}
-                  w={['26px', '32px']}
-                  borderRadius={'md'}
-                  cursor={'pointer'}
-                  _hover={{ bg: '#F5F5F8' }}
-                  onTouchStart={onWhisperRecord}
-                  onTouchEnd={onWhisperRecord}
-                  display={isPc ? 'none' : 'flex'}
-                >
-                  <MyIcon
-                    userSelect={'none'}
-                    name={isSpeaking && isPc ? 'core/chat/finishSpeak' : 'core/chat/recordFill'}
-                    width={['20px', '22px']}
-                    height={['20px', '22px']}
-                    color={isSpeaking ? 'primary.500' : 'myGray.600'}
-                  />
-                </Flex>
-              </MyTooltip>
-            </>
-          )}
-          {/* send and stop icon */}
-          {isSpeaking && isPc ? (
-            <Box color={'#5A646E'} w={'36px'} textAlign={'right'} whiteSpace={'nowrap'}>
-              {speakingTimeString}
-            </Box>
-          ) : (
-            <Flex
-              alignItems={'center'}
-              justifyContent={'center'}
-              flexShrink={0}
-              h={['28px', '32px']}
-              w={['28px', '32px']}
-              borderRadius={'md'}
-              bg={
-                isSpeaking || isChatting
-                  ? ''
-                  : !havInput || hasFileUploading
-                    ? '#E5E5E5'
-                    : 'primary.500'
-              }
-              cursor={havInput ? 'pointer' : 'not-allowed'}
-              lineHeight={1}
-              onClick={() => {
-                if (isChatting) {
-                  return onStop();
-                }
-                return handleSend();
-              }}
-            >
-              {isChatting ? (
-                <MyIcon
-                  animation={'zoomStopIcon 0.4s infinite alternate'}
-                  width={['22px', '25px']}
-                  height={['22px', '25px']}
-                  cursor={'pointer'}
-                  name={'stop'}
-                  color={'gray.500'}
-                />
-              ) : (
-                <MyTooltip label={isPc ? t('common:core.chat.Send Message') : ''}>
-                  <MyIcon
-                    name={'core/chat/sendFill'}
-                    width={['18px', '20px']}
-                    height={['18px', '20px']}
-                    color={'white'}
-                  />
-                </MyTooltip>
-              )}
-            </Flex>
-          )}
+                ) : (
+                  <MyTooltip label={isPc ? t('common:core.chat.Send Message') : ''}>
+                    <MyIcon
+                      name={'core/chat/sendFill'}
+                      width={['28px']}
+                      height={['28px']}
+                      color={
+                        isSpeaking || isChatting
+                          ? ''
+                          : !havInput || hasFileUploading
+                            ? '#E5E5E5'
+                            : 'primary.500'
+                      }
+                    />
+                  </MyTooltip>
+                )}
+              </Flex>
+            )}
+          </Flex>
         </Flex>
-      </Flex>
+      </>
     ),
     [
       File,
@@ -496,7 +590,7 @@ const ChatInput = ({
         position={'relative'}
         boxShadow={isSpeaking ? `0 0 10px rgba(54,111,255,0.4)` : `0 0 10px rgba(0,0,0,0.2)`}
         borderRadius={['none', 'md']}
-        bg={'white'}
+        bg={isSpeaking ? '#EC6C00' : 'white'}
         overflow={'display'}
         {...(isPc
           ? {

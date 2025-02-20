@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo, useRef } from 'react';
+import removeMarkdown from 'remove-markdown';
 import { useToast } from '@fastgpt/web/hooks/useToast';
 import { getErrText } from '@fastgpt/global/common/error/utils';
 import type { AppTTSConfigType } from '@fastgpt/global/core/app/type.d';
@@ -324,6 +325,7 @@ export const useAudioPlay = (
   /* split audio text and fetch tts */
   const splitText2Audio = useCallback(
     async (text: string, done?: boolean) => {
+      text = removeMarkdown(text);
       if (ttsConfig?.type === TTSTypeEnum.model && ttsConfig?.model) {
         if (!isMediaSourceSupported()) {
           // 不支持 MediaSource 时，等待文本结束后一次性播放

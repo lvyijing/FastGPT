@@ -404,6 +404,8 @@
   "core.chat.Feedback Submit": "Submit Feedback",
   "core.chat.Feedback Success": "Feedback Successful!",
   "core.chat.Finish Speak": "Voice Input Completed",
+  "core.chat.Release Send": "Release to send",
+  "core.chat.Hold Speak": "Press and hold to speak",
   "core.chat.History": "History",
   "core.chat.History Amount": "{{amount}} Records",
   "core.chat.Mark": "Mark Expected Answer",
