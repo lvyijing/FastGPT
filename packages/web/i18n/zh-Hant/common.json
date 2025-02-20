@@ -405,6 +405,7 @@
   "core.chat.Finish Speak": "語音輸入完成",
   "core.chat.Hold Speak": "按住說話",
   "core.chat.Release Send": "松開發送",
+  "core.chat.iOS Tip": "抱歉，即將支援蘋果手機的語音輸入，敬請期待。",
   "core.chat.History": "歷史記錄",
   "core.chat.History Amount": "{{amount}} 筆記錄",
   "core.chat.Mark": "標記預期回答",

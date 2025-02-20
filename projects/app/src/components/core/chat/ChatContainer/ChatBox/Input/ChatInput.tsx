@@ -163,6 +163,16 @@ const ChatInput = ({
     }
   };
   const handleTouchStart = useCallback(() => {
+    //判断是否是iOS系统
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+      toast({
+        status: 'warning',
+        title: t('common:core.chat.iOS Tip')
+      });
+      // return;
+    }
+
     touchStartTimeRef.current = Date.now();
     startSpeak(finishWhisperTranscription);
   }, [
@@ -590,7 +600,7 @@ const ChatInput = ({
         position={'relative'}
         boxShadow={isSpeaking ? `0 0 10px rgba(54,111,255,0.4)` : `0 0 10px rgba(0,0,0,0.2)`}
         borderRadius={['none', 'md']}
-        bg={isSpeaking ? '#EC6C00' : 'white'}
+        bg={!isPc && isSpeaking ? '#EC6C00' : 'white'}
         overflow={'display'}
         {...(isPc
           ? {

@@ -408,6 +408,7 @@
   "core.chat.Feedback Success": "反馈成功！",
   "core.chat.Finish Speak": "语音输入完成",
   "core.chat.Hold Speak": "按住说话",
+  "core.chat.iOS Tip": "抱歉，即将支持苹果手机的语音输入，敬请期待。",
   "core.chat.Release Send": "松开发送",
   "core.chat.History": "历史记录",
   "core.chat.History Amount": "{{amount}} 条记录",

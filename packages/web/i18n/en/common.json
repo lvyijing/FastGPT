@@ -406,6 +406,7 @@
   "core.chat.Finish Speak": "Voice Input Completed",
   "core.chat.Release Send": "Release to send",
   "core.chat.Hold Speak": "Press and hold to speak",
+  "core.chat.iOS Tip": "Sorry, voice input for Apple phones will be supported soon, so stay tuned.",
   "core.chat.History": "History",
   "core.chat.History Amount": "{{amount}} Records",
   "core.chat.Mark": "Mark Expected Answer",
