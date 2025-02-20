@@ -110,6 +110,7 @@ const ChatInput = ({
   /* whisper init */
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const touchStartTimeRef = useRef(0);
+  const isIOS = useRef(false);
   const [isVoice, setIsVoice] = useState(true);
   const {
     isSpeaking,
@@ -163,16 +164,6 @@ const ChatInput = ({
     }
   };
   const handleTouchStart = useCallback(() => {
-    //判断是否是iOS系统
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (isIOS) {
-      toast({
-        status: 'warning',
-        title: t('common:core.chat.iOS Tip')
-      });
-      // return;
-    }
-
     touchStartTimeRef.current = Date.now();
     startSpeak(finishWhisperTranscription);
   }, [
@@ -221,15 +212,21 @@ const ChatInput = ({
         console.error('麦克风权限未开启', err);
       }
     };
-    if (whisperConfig?.open) {
-      checkMicrophonePermission();
-    }
-    if (!isPc && whisperConfig?.open) {
-      setIsVoice(true);
-    } else {
+    //判断是否是iOS系统
+    isIOS.current = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS.current) {
       setIsVoice(false);
+    } else {
+      if (whisperConfig?.open) {
+        checkMicrophonePermission();
+      }
+      if (!isPc && whisperConfig?.open) {
+        setIsVoice(true);
+      } else {
+        setIsVoice(false);
+      }
     }
-  }, [whisperConfig?.open]);
+  }, [whisperConfig?.open, isIOS]);
 
   const RenderTranslateLoading = useMemo(
     () => (
@@ -472,6 +469,7 @@ const ChatInput = ({
                     display={!isPc && whisperConfig.open ? 'flex' : 'none'}
                   >
                     <MyIcon
+                      display={isIOS.current ? 'none' : 'block'}
                       userSelect={'none'}
                       name={isSpeaking && isPc ? 'core/chat/finishSpeak' : 'core/chat/recordFill'}
                       width={'30px'}
