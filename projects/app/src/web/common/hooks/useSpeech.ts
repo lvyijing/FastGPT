@@ -59,13 +59,13 @@ export const useSpeech = (props?: OutLinkChatAuthProps & { appId?: string }) => 
     }
     try {
       cancelWhisperSignal.current = false;
+      setIsSpeaking(true);
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setMediaStream(stream);
 
       mediaRecorder.current = new MediaRecorder(stream);
       const chunks: Blob[] = [];
-      setIsSpeaking(true);
 
       mediaRecorder.current.onstart = () => {
         startTimestamp.current = Date.now();
@@ -109,19 +109,9 @@ export const useSpeech = (props?: OutLinkChatAuthProps & { appId?: string }) => 
             };
           })();
 
-          // let options = {};
-          // if (MediaRecorder.isTypeSupported('audio/webm')) {
-          //   options = { type: 'audio/webm' };
-          // } else if (MediaRecorder.isTypeSupported('video/mp3')) {
-          //   options = { type: 'video/mp3' };
-          // } else {
-          //   console.error('no suitable mimetype found for this device');
-          // }
-
           const blob = new Blob(chunks, options);
           const duration = Math.round((Date.now() - startTimestamp.current) / 1000);
           formData.append('file', blob, filename);
-          // formData.append('file', blob, 'recording.mp3');
           formData.append(
             'data',
             JSON.stringify({
@@ -170,21 +160,20 @@ export const useSpeech = (props?: OutLinkChatAuthProps & { appId?: string }) => 
   };
 
   const stopSpeak = (cancel = false) => {
+    if (cancel) {
+      setIsSpeaking(false);
+      setIsTransCription(false);
+      //关闭麦克风
+      if (mediaStream) {
+        mediaStream.getTracks().forEach((track) => track.stop()); //关闭麦克风
+      }
+    }
     cancelWhisperSignal.current = cancel;
+    console.log(cancelWhisperSignal.current);
     if (mediaRecorder.current) {
       mediaRecorder.current?.stop();
       clearInterval(intervalRef.current);
     }
-    setTimeout(async () => {
-      if (cancel) {
-        setIsSpeaking(false);
-        setIsTransCription(false);
-        //关闭麦克风
-        if (mediaStream) {
-          mediaStream.getTracks().forEach((track) => track.stop()); //关闭麦克风
-        }
-      }
-    }, 300);
   };
 
   useEffect(() => {

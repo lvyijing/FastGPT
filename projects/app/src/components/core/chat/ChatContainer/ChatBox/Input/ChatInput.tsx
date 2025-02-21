@@ -110,7 +110,6 @@ const ChatInput = ({
   /* whisper init */
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const touchStartTimeRef = useRef(0);
-  const isIOS = useRef(false);
   const [isVoice, setIsVoice] = useState(true);
   const {
     isSpeaking,
@@ -150,20 +149,20 @@ const ChatInput = ({
     stopSpeak,
     whisperConfig?.autoSend
   ]);
-  const finishWhisperTranscription = (text: string) => {
-    if (!text) return;
-    if (whisperConfig?.autoSend) {
-      onSendMessage({
-        text,
-        files: fileList,
-        autoTTSResponse
-      });
-      replaceFiles([]);
-    } else {
-      resetInputVal({ text });
-    }
-  };
   const handleTouchStart = useCallback(() => {
+    const finishWhisperTranscription = (text: string) => {
+      if (!text) return;
+      if (whisperConfig?.autoSend) {
+        onSendMessage({
+          text,
+          files: fileList,
+          autoTTSResponse
+        });
+        replaceFiles([]);
+      } else {
+        resetInputVal({ text });
+      }
+    };
     touchStartTimeRef.current = Date.now();
     startSpeak(finishWhisperTranscription);
   }, [
@@ -178,13 +177,13 @@ const ChatInput = ({
     touchStartTimeRef,
     Date.now
   ]);
-  const handleTouchEnd = useCallback(() => {
-    if (Date.now() - touchStartTimeRef.current < 300) {
+  const handleTouchEnd = () => {
+    if (Date.now() - touchStartTimeRef.current < 1000) {
       stopSpeak(true);
     } else {
       stopSpeak();
     }
-  }, [stopSpeak, touchStartTimeRef, Date.now]);
+  };
   useEffect(() => {
     if (!stream) {
       return;
@@ -212,21 +211,15 @@ const ChatInput = ({
         console.error('麦克风权限未开启', err);
       }
     };
-    //判断是否是iOS系统
-    isIOS.current = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (isIOS.current) {
-      setIsVoice(false);
-    } else {
-      if (whisperConfig?.open) {
-        checkMicrophonePermission();
-      }
-      if (!isPc && whisperConfig?.open) {
-        setIsVoice(true);
-      } else {
-        setIsVoice(false);
-      }
+    if (whisperConfig?.open) {
+      checkMicrophonePermission();
     }
-  }, [whisperConfig?.open, isIOS]);
+    if (!isPc && whisperConfig?.open) {
+      setIsVoice(true);
+    } else {
+      setIsVoice(false);
+    }
+  }, [whisperConfig?.open]);
 
   const RenderTranslateLoading = useMemo(
     () => (
@@ -469,7 +462,6 @@ const ChatInput = ({
                     display={!isPc && whisperConfig.open ? 'flex' : 'none'}
                   >
                     <MyIcon
-                      display={isIOS.current ? 'none' : 'block'}
                       userSelect={'none'}
                       name={isSpeaking && isPc ? 'core/chat/finishSpeak' : 'core/chat/recordFill'}
                       width={'30px'}
