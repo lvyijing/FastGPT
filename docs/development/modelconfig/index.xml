@@ -33,4 +33,19 @@ OneAPI 基础教程 link概念 link 渠道： OneApi 中一个渠道对应一个
 导入本地文件，直接选择文件，然后一路下一步即可。79 个索引，大概花了 20s 的时间就完成了。现在我们去测试一下知识库问答。
 首先回到我们刚创建的应用，选择知识库，调整一下参数后即可开始对话：
 对话完成后，点击底部的引用，可以查看引用详情，同时可以看到具体的检索和重排得分：
-测试语音播放 link继续在刚刚的应用中，左侧配置中找到语音播放，点击后可以从弹窗中选择语音模型，并进行试听：</description></item></channel></rss>
+测试语音播放 link继续在刚刚的应用中，左侧配置中找到语音播放，点击后可以从弹窗中选择语音模型，并进行试听：</description></item><item><title>通过 PPIO LLM API 接入模型</title><link>https://doc.tryfastgpt.ai/docs/development/modelconfig/ppio/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://doc.tryfastgpt.ai/docs/development/modelconfig/ppio/</guid><description>FastGPT 还可以通过 PPIO LLM API 接入模型。
+warning 以下内容搬运自 FastGPT 接入 PPIO LLM API，可能会有更新不及时的情况。
+FastGPT 是一个将 AI 开发、部署和使用全流程简化为可视化操作的平台。它使开发者不需要深入研究算法， 用户也不需要掌握复杂技术，通过一站式服务将人工智能技术变成易于使用的工具。
+PPIO 派欧云提供简单易用的 API 接口，让开发者能够轻松调用 DeepSeek 等模型。
+对开发者：无需重构架构，3 个接口完成从文本生成到决策推理的全场景接入，像搭积木一样设计 AI 工作流； 对生态：自动适配从中小应用到企业级系统的资源需求，让智能随业务自然生长。 下方教程提供完整接入方案（含密钥配置），帮助您快速将 FastGPT 与 PPIO API 连接起来。
+1. 配置前置条件 link(1) 获取 API 接口地址
+固定为: https://api.ppinfra.com/v3/openai/chat/completions。
+(2) 获取 【API 密钥】
+登录派欧云控制台 API 秘钥管理 页面，点击创建按钮。 注册账号填写邀请码【VOJL20】得 50 代金券
+(3) 生成并保存 【API 密钥】
+warning 秘钥在服务端是加密存储，请在生成时保存好秘钥；若遗失可以在控制台上删除并创建一个新的秘钥。
+(4) 获取需要使用的模型 ID
+deepseek 系列：
+DeepSeek R1：deepseek/deepseek-r1/community
+DeepSeek V3：deepseek/deepseek-v3/community
+其他模型 ID、最大上下文及价格可参考：模型列表</description></item></channel></rss>
