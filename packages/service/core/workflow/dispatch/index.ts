@@ -21,7 +21,7 @@ import {
   FlowNodeInputTypeEnum,
   FlowNodeTypeEnum
 } from '@fastgpt/global/core/workflow/node/constant';
-import { getNanoid, replaceVariable } from '@fastgpt/global/common/string/tools';
+import { getNanoid } from '@fastgpt/global/common/string/tools';
 import { getSystemTime } from '@fastgpt/global/common/time/timezone';
 
 import { dispatchWorkflowStart } from './init/workflowStart';
@@ -232,9 +232,14 @@ export async function dispatchWorkFlow(data: Props): Promise<DispatchFlowRespons
       chatNodeUsages = chatNodeUsages.concat(nodeDispatchUsages);
     }
 
-    if (toolResponses !== undefined) {
+    if (toolResponses !== undefined && toolResponses !== null) {
       if (Array.isArray(toolResponses) && toolResponses.length === 0) return;
-      if (typeof toolResponses === 'object' && Object.keys(toolResponses).length === 0) return;
+      if (
+        !Array.isArray(toolResponses) &&
+        typeof toolResponses === 'object' &&
+        Object.keys(toolResponses).length === 0
+      )
+        return;
       toolRunResponse = toolResponses;
     }
 
@@ -421,6 +426,14 @@ export async function dispatchWorkFlow(data: Props): Promise<DispatchFlowRespons
     })();
 
     if (!nodeRunResult) return [];
+    if (res?.closed) {
+      addLog.warn('Request is closed', {
+        appId: props.runningAppInfo.id,
+        nodeId: node.nodeId,
+        nodeName: node.name
+      });
+      return [];
+    }
 
     /* 
       特殊情况：
