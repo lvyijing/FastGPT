@@ -76,6 +76,14 @@ const nextConfig = {
 
     return config;
   },
+  rewrites() {
+    return [
+      {
+        source: '/api/device/Device/:path*',
+        destination: process.env.NEXT_PUBLIC_ELITECH_API_URL + '/api/device/Device/:path*'
+      }
+    ];
+  },
   // 需要转译的包
   transpilePackages: ['@fastgpt/global', '@fastgpt/web', 'ahooks'],
   experimental: {
@@ -84,8 +92,8 @@ const nextConfig = {
       'mongoose',
       'pg',
       '@zilliz/milvus2-sdk-node',
-      "tiktoken",
-      "@node-rs/jieba"
+      'tiktoken',
+      '@node-rs/jieba'
     ],
     outputFileTracingRoot: path.join(__dirname, '../../'),
     instrumentationHook: true

@@ -1,6 +1,6 @@
 import { useSpeech } from '@/web/common/hooks/useSpeech';
 import { useSystemStore } from '@/web/common/system/useSystemStore';
-import { Box, Flex, Spinner, Textarea } from '@chakra-ui/react';
+import { Box, Flex, Spinner, Textarea, useDisclosure } from '@chakra-ui/react';
 import React, { useRef, useEffect, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'next-i18next';
 import MyTooltip from '@fastgpt/web/components/common/MyTooltip';
@@ -19,8 +19,11 @@ import { useFileUpload } from '../hooks/useFileUpload';
 import ComplianceTip from '@/components/common/ComplianceTip/index';
 import { useToast } from '@fastgpt/web/hooks/useToast';
 import { useMount } from 'ahooks';
+import { getRobotAIRemainingTimes } from '@/web/support/elitechapi/api';
+import { useChatStore } from '@/web/core/chat/context/useChatStore';
 
 const InputGuideBox = dynamic(() => import('./InputGuideBox'));
+const AlertDialog = dynamic(() => import('../components/AlertDialog'));
 
 const fileTypeFilter = (file: File) => {
   return (
@@ -45,6 +48,7 @@ const ChatInput = ({
   const { t } = useTranslation();
   const { toast } = useToast();
   const { isPc } = useSystem();
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   const { setValue, watch, control } = chatForm;
   const inputValue = watch('input');
@@ -97,12 +101,34 @@ const ChatInput = ({
     async (val?: string) => {
       if (!canSendMessage) return;
       const textareaValue = val || TextareaDom.current?.value || '';
-
-      onSendMessage({
-        text: textareaValue.trim(),
-        files: fileList
-      });
-      replaceFiles([]);
+      if (useChatStore.getState().urlParams.deviceId) {
+        await getRobotAIRemainingTimes({
+          deviceId: useChatStore.getState().urlParams.deviceId
+        })
+          .then((res) => {
+            if (res.data > 0) {
+              onSendMessage({
+                text: textareaValue.trim(),
+                files: fileList
+              });
+              replaceFiles([]);
+            } else {
+              onOpen();
+            }
+          })
+          .catch((error) => {
+            toast({
+              status: 'error',
+              title: error.message
+            });
+          });
+      } else {
+        onSendMessage({
+          text: textareaValue.trim(),
+          files: fileList
+        });
+        replaceFiles([]);
+      }
     },
     [TextareaDom, canSendMessage, fileList, onSendMessage, replaceFiles]
   );
@@ -120,20 +146,44 @@ const ChatInput = ({
     renderAudioGraph,
     stream
   } = useSpeech({ appId, ...outLinkAuthData });
-  const onWhisperRecord = useCallback(() => {
-    const finishWhisperTranscription = (text: string) => {
-      if (!text) return;
-      if (whisperConfig?.autoSend) {
+  const finishWhisperTranscription = (text: string) => {
+    if (!text) return;
+    if (whisperConfig?.autoSend) {
+      if (useChatStore.getState().urlParams.deviceId) {
+        getRobotAIRemainingTimes({
+          deviceId: useChatStore.getState().urlParams.deviceId
+        })
+          .then((res) => {
+            if (res.data > 0) {
+              onSendMessage({
+                text,
+                files: fileList,
+                autoTTSResponse
+              });
+              replaceFiles([]);
+            } else {
+              onOpen();
+            }
+          })
+          .catch((error) => {
+            toast({
+              status: 'error',
+              title: error.message
+            });
+          });
+      } else {
         onSendMessage({
           text,
           files: fileList,
           autoTTSResponse
         });
         replaceFiles([]);
-      } else {
-        resetInputVal({ text });
       }
-    };
+    } else {
+      resetInputVal({ text });
+    }
+  };
+  const onWhisperRecord = useCallback(() => {
     if (isSpeaking) {
       return stopSpeak();
     }
@@ -150,19 +200,6 @@ const ChatInput = ({
     whisperConfig?.autoSend
   ]);
   const handleTouchStart = useCallback(() => {
-    const finishWhisperTranscription = (text: string) => {
-      if (!text) return;
-      if (whisperConfig?.autoSend) {
-        onSendMessage({
-          text,
-          files: fileList,
-          autoTTSResponse
-        });
-        replaceFiles([]);
-      } else {
-        resetInputVal({ text });
-      }
-    };
     touchStartTimeRef.current = Date.now();
     startSpeak(finishWhisperTranscription);
   }, [
@@ -627,6 +664,11 @@ const ChatInput = ({
         {RenderTextarea}
       </Box>
       <ComplianceTip type={'chat'} />
+      <AlertDialog
+        alertText={t('common:questions_answers_tips')}
+        isOpen={isOpen}
+        onClose={onClose}
+      />
     </Box>
   );
 };

@@ -1293,5 +1293,6 @@
   "xx_search_result": "{{key}} 的搜索结果",
   "yes": "是",
   "yesterday": "昨天",
-  "yesterday_detail_time": "昨天 {{time}}"
+  "yesterday_detail_time": "昨天 {{time}}",
+  "questions_answers_tips": "免费问答次数已用完"
 }

@@ -1295,5 +1295,6 @@
   "xx_search_result": "{{key}} Search Results",
   "yes": "Yes",
   "yesterday": "yesterday",
-  "yesterday_detail_time": "Yesterday {{time}}"
+  "yesterday_detail_time": "Yesterday {{time}}",
+  "questions_answers_tips": "The number of free questions and answers has been used up"
 }

@@ -65,6 +65,8 @@ import { ChatRecordContext } from '@/web/core/chat/context/chatRecordContext';
 import { ChatItemContext } from '@/web/core/chat/context/chatItemContext';
 import TimeBox from './components/TimeBox';
 import MyBox from '@fastgpt/web/components/common/MyBox';
+import { getDecrementTimes } from '@/web/support/elitechapi/api';
+import { useChatStore } from '@/web/core/chat/context/useChatStore';
 
 const ResponseTags = dynamic(() => import('./components/ResponseTags'));
 const FeedbackModal = dynamic(() => import('./components/FeedbackModal'));
@@ -110,6 +112,7 @@ const ChatBox = ({
   const { toast } = useToast();
   const { feConfigs } = useSystemStore();
   const { isPc } = useSystem();
+  const { urlParams } = useChatStore();
   const TextareaDom = useRef<HTMLTextAreaElement>(null);
   const chatController = useRef(new AbortController());
   const questionGuideController = useRef(new AbortController());
@@ -523,7 +526,9 @@ const ChatBox = ({
                 status: 'error'
               });
             }
-
+            if (urlParams.deviceId) {
+              handleDecrementTimes();
+            }
             // Set last chat finish status
             let newChatHistories: ChatSiteItemType[] = [];
             setChatRecords((state) => {
@@ -588,7 +593,16 @@ const ChatBox = ({
       )();
     }
   );
-
+  const handleDecrementTimes = () => {
+    getDecrementTimes({ deviceId: urlParams.deviceId })
+      .then()
+      .catch((error) => {
+        toast({
+          status: 'error',
+          title: error.message
+        });
+      });
+  };
   // retry input
   const onDelMessage = useCallback(
     (contentId: string) => {

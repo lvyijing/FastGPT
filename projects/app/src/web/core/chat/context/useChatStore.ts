@@ -5,6 +5,11 @@ import { getNanoid } from '@fastgpt/global/common/string/tools';
 import { OutLinkChatAuthProps } from '@fastgpt/global/support/permission/chat';
 import { ChatSourceEnum } from '@fastgpt/global/core/chat/constants';
 
+type urlParamsType = {
+  deviceId?: string;
+  token?: string;
+};
+
 type State = {
   source?: `${ChatSourceEnum}`;
   setSource: (e: `${ChatSourceEnum}`) => any;
@@ -20,6 +25,9 @@ type State = {
 
   outLinkAuthData: OutLinkChatAuthProps;
   setOutLinkAuthData: (e: OutLinkChatAuthProps) => any;
+
+  urlParams: urlParamsType;
+  setUrlParams: (e: urlParamsType) => any;
 };
 
 const createCustomStorage = () => {
@@ -110,6 +118,12 @@ export const useChatStore = create<State>()(
         setOutLinkAuthData(e) {
           set((state) => {
             state.outLinkAuthData = e;
+          });
+        },
+        urlParams: {},
+        setUrlParams(e) {
+          set((state) => {
+            state.urlParams = e;
           });
         }
       })),

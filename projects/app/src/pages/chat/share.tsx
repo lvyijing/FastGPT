@@ -55,6 +55,7 @@ type Props = {
 };
 
 const OutLink = (props: Props) => {
+  const { setUrlParams } = useChatStore();
   const { t } = useTranslation();
   const router = useRouter();
   const {
@@ -63,6 +64,8 @@ const OutLink = (props: Props) => {
     showHead = '1',
     authToken,
     customUid,
+    deviceId = '',
+    token = '',
     ...customVariables
   } = router.query as {
     shareId: string;
@@ -70,6 +73,8 @@ const OutLink = (props: Props) => {
     showHead: '0' | '1';
     authToken: string;
     [key: string]: string;
+    deviceId: string;
+    token: string;
   };
   const { isPc } = useSystem();
   const { outLinkAuthData, appId, chatId } = useChatStore();
@@ -120,6 +125,15 @@ const OutLink = (props: Props) => {
       }
     }
   );
+  useEffect(() => {
+    setUrlParams({
+      deviceId,
+      token
+    });
+    return () => {
+      setUrlParams({});
+    };
+  }, [deviceId, token]);
   useEffect(() => {
     if (initSign.current === false && data && isChatRecordsLoaded) {
       initSign.current = true;
@@ -317,7 +331,7 @@ const OutLink = (props: Props) => {
 const Render = (props: Props) => {
   const { shareId, authToken, customUid, appId } = props;
   const { localUId } = useShareChatStore();
-  const { source, chatId, setSource, setAppId, setOutLinkAuthData } = useChatStore();
+  const { source, chatId, setSource, setAppId, setOutLinkAuthData, setUrlParams } = useChatStore();
   const { setUserDefaultLng } = useI18nLng();
 
   const chatHistoryProviderParams = useMemo(() => {
