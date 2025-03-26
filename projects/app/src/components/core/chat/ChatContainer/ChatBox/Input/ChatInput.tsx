@@ -105,8 +105,8 @@ const ChatInput = ({
         await getRobotAIRemainingTimes({
           deviceId: useChatStore.getState().urlParams.deviceId
         })
-          .then((res) => {
-            if (res.data > 0) {
+          .then((res: { data: number } | undefined) => {
+            if (res !== undefined && res.data > 0) {
               onSendMessage({
                 text: textareaValue.trim(),
                 files: fileList
@@ -153,8 +153,8 @@ const ChatInput = ({
         getRobotAIRemainingTimes({
           deviceId: useChatStore.getState().urlParams.deviceId
         })
-          .then((res) => {
-            if (res.data > 0) {
+          .then((res: { data: number } | undefined) => {
+            if (res !== undefined && res.data > 0) {
               onSendMessage({
                 text,
                 files: fileList,
