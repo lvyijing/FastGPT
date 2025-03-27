@@ -44,10 +44,10 @@ const ChatHeader = ({
     <Flex
       alignItems={'center'}
       px={[3, 5]}
-      minH={['60px', '60px']}
+      minH={['46px', '60px']}
       borderBottom={'sm'}
       color={'myGray.900'}
-      fontSize={'lg'}
+      fontSize={'sm'}
     >
       {isPc ? (
         <>
@@ -226,18 +226,18 @@ const MobileHeader = ({
   return (
     <>
       {showHistory && (
-        <MyIcon name={'menu'} w={'24px'} h={'24px'} color={'myGray.900'} onClick={onOpenSlider} />
+        <MyIcon name={'menu'} w={'20px'} h={'20px'} color={'myGray.900'} onClick={onOpenSlider} />
       )}
       <Flex px={3} alignItems={'center'} flex={'1 0 0'} w={0} justifyContent={'center'}>
         <Flex alignItems={'center'} onClick={toggleDrawer}>
-          <Avatar borderRadius={'sm'} src={avatar} w={'2.5rem'} />
+          <Avatar borderRadius={'sm'} src={avatar} w={'1rem'} />
           <Box ml={1} className="textEllipsis">
             {name}
           </Box>
           {isShareChat ? null : (
             <MyIcon
               name={'core/chat/chevronSelector'}
-              w={'1.6rem'}
+              w={'1.25rem'}
               color={isOpenDrawer ? 'primary.600' : 'myGray.900'}
             />
           )}

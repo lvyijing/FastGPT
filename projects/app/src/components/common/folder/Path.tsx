@@ -66,7 +66,7 @@ const FolderPath = (props: {
             {item.parentName}
           </Box>
           {i !== concatPaths.length - 1 && (
-            <MyIcon name={'common/line'} color={'myGray.500'} mx={1.5} width={'5px'} />
+            <MyIcon name={'common/line'} color={'myGray.500'} mx={1} width={'5px'} />
           )}
         </Flex>
       ))}

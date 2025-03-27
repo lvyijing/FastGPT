@@ -27,7 +27,7 @@ export type ChatControllerProps = {
 };
 
 const controlIconStyle = {
-  w: '20px',
+  w: '14px',
   cursor: 'pointer',
   p: '5px',
   bg: 'white',
