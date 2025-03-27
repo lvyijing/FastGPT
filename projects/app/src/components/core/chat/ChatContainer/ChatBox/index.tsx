@@ -14,7 +14,7 @@ import type {
 } from '@fastgpt/global/core/chat/type.d';
 import { useToast } from '@fastgpt/web/hooks/useToast';
 import { getErrText } from '@fastgpt/global/common/error/utils';
-import { Box, Checkbox } from '@chakra-ui/react';
+import { Box, Checkbox, useDisclosure } from '@chakra-ui/react';
 import { EventNameEnum, eventBus } from '@/web/common/utils/eventbus';
 import { chats2GPTMessages } from '@fastgpt/global/core/chat/adapt';
 import { useForm } from 'react-hook-form';
@@ -67,6 +67,7 @@ import TimeBox from './components/TimeBox';
 import MyBox from '@fastgpt/web/components/common/MyBox';
 import { getDecrementTimes } from '@/web/support/elitechapi/api';
 import { useChatStore } from '@/web/core/chat/context/useChatStore';
+import { getRobotAIRemainingTimes } from '@/web/support/elitechapi/api';
 
 const ResponseTags = dynamic(() => import('./components/ResponseTags'));
 const FeedbackModal = dynamic(() => import('./components/FeedbackModal'));
@@ -75,6 +76,7 @@ const SelectMarkCollection = dynamic(() => import('./components/SelectMarkCollec
 const Empty = dynamic(() => import('./components/Empty'));
 const WelcomeBox = dynamic(() => import('./components/WelcomeBox'));
 const VariableInput = dynamic(() => import('./components/VariableInput'));
+const AlertDialog = dynamic(() => import('./components/AlertDialog'));
 
 enum FeedbackTypeEnum {
   user = 'user',
@@ -117,6 +119,7 @@ const ChatBox = ({
   const chatController = useRef(new AbortController());
   const questionGuideController = useRef(new AbortController());
   const pluginController = useRef(new AbortController());
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   const [isLoading, setIsLoading] = useState(false);
   const [feedbackId, setFeedbackId] = useState<string>();
@@ -396,6 +399,7 @@ const ChatBox = ({
     }) => {
       variablesForm.handleSubmit(
         async ({ variables = {} }) => {
+          if (urlParams.deviceId && !(await handleGetRobotAIRemainingTimes())) return;
           if (!onStartChat) return;
           if (isChatting) {
             !hideInUI &&
@@ -601,6 +605,26 @@ const ChatBox = ({
           status: 'error',
           title: error.message
         });
+      });
+  };
+  const handleGetRobotAIRemainingTimes = () => {
+    return getRobotAIRemainingTimes({
+      deviceId: urlParams.deviceId
+    })
+      .then((res: { data: number } | undefined) => {
+        if (res !== undefined && res.data > 0) {
+          return true;
+        } else {
+          onOpen();
+          return false;
+        }
+      })
+      .catch((error) => {
+        toast({
+          status: 'error',
+          title: error.message
+        });
+        return false;
       });
   };
   // retry input
@@ -1149,6 +1173,11 @@ const ChatBox = ({
           }}
         />
       )}
+      <AlertDialog
+        alertText={t('common:questions_answers_tips')}
+        isOpen={isOpen}
+        onClose={onClose}
+      />
     </MyBox>
   );
 };

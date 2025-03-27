@@ -21,7 +21,8 @@ fi
 
 # 构建 Docker 镜像
 echo "开始构建 Docker 镜像..."
-docker build --platform linux/amd64 -t $IMAGE_NAME:$IMAGE_TAG $DOCKERFILE_PATH
+# docker build --platform linux/amd64 -t $IMAGE_NAME:$IMAGE_TAG $DOCKERFILE_PATH --build-arg proxy=taobao --build-arg DEPLOY_ENV=production
+docker build --platform linux/amd64 -t $IMAGE_NAME:$IMAGE_TAG $DOCKERFILE_PATH --build-arg proxy=taobao --build-arg DEPLOY_ENV=development
 
 # 检查镜像是否构建成功
 if [ $? -ne 0 ]; then
