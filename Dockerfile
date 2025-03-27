@@ -35,7 +35,7 @@ COPY --from=maindeps /app/node_modules ./node_modules
 COPY --from=maindeps /app/packages ./packages
 COPY ./projects/app ./projects/app
 COPY --from=maindeps /app/projects/app/node_modules ./projects/app/node_modules
-COPY .env.${DEPLOY_ENV} .env
+COPY ./projects/app/.env.${DEPLOY_ENV} ./projects/app/.env
 
 RUN [ -z "$proxy" ] || sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories
 

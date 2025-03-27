@@ -2,7 +2,7 @@
 
 # 配置变量
 IMAGE_NAME="registry.cn-hangzhou.aliyuncs.com/fastgpt/fastgpt"  # 镜像名称
-IMAGE_TAG="v4.9.1_1.0"           # 镜像标签，默认为 latest
+IMAGE_TAG="v4.9.1_1.2"           # 镜像标签，默认为 latest
 DOCKERFILE_PATH="."          # Dockerfile 路径，默认为当前目录
 REGISTRY_URL="crpi-b71hgy3y7yanyni3.cn-qingdao.personal.cr.aliyuncs.com"  # 阿里云容器镜像服务的 Registry 地址
 NAMESPACE="fastgpt_elitech"   # 阿里云容器镜像服务的命名空间
