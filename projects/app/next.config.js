@@ -76,14 +76,6 @@ const nextConfig = {
 
     return config;
   },
-  rewrites() {
-    return [
-      {
-        source: '/api/device/Device/:path*',
-        destination: process.env.NEXT_PUBLIC_ELITECH_API_URL + '/api/device/Device/:path*'
-      }
-    ];
-  },
   // 需要转译的包
   transpilePackages: ['@fastgpt/global', '@fastgpt/web', 'ahooks'],
   experimental: {

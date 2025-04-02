@@ -6,6 +6,7 @@ import React, {
   useImperativeHandle,
   useEffect
 } from 'react';
+import axios from 'axios';
 import Script from 'next/script';
 import type {
   AIChatItemValueItemType,
@@ -112,7 +113,7 @@ const ChatBox = ({
   const ScrollContainerRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
   const { toast } = useToast();
-  const { feConfigs } = useSystemStore();
+  const { feConfigs, setLoading } = useSystemStore();
   const { isPc } = useSystem();
   const { urlParams } = useChatStore();
   const TextareaDom = useRef<HTMLTextAreaElement>(null);
@@ -598,21 +599,22 @@ const ChatBox = ({
     }
   );
   const handleDecrementTimes = () => {
-    getDecrementTimes({ deviceId: urlParams.deviceId })
+    getDecrementTimes(urlParams.deviceId)
       .then()
       .catch((error) => {
         toast({
           status: 'error',
-          title: error.message
+          title: error?.error?.message || error.message
         });
       });
   };
+
   const handleGetRobotAIRemainingTimes = () => {
-    return getRobotAIRemainingTimes({
-      deviceId: urlParams.deviceId
-    })
-      .then((res: { data: number } | undefined) => {
-        if (res !== undefined && res.data > 0) {
+    setLoading(true);
+    return getRobotAIRemainingTimes(urlParams.deviceId)
+      .then((res) => {
+        setLoading(false);
+        if ((res ?? 0) > 0) {
           return true;
         } else {
           onOpen();
@@ -620,9 +622,11 @@ const ChatBox = ({
         }
       })
       .catch((error) => {
+        console.log(error);
+        setLoading(false);
         toast({
           status: 'error',
-          title: error.message
+          title: error?.error?.message || error.message
         });
         return false;
       });

@@ -1,6 +1,12 @@
 Dockerfile
 .dockerignore
-node_modules
+node_modules/
+packages/global/node_modules/
+packages/plugins/node_modules/
+packages/service/node_modules/
+packages/templates/node_modules/
+packages/web/node_modules/
+projects/app/node_modules/
 npm-debug.log
 README.md
 .next

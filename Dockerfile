@@ -3,6 +3,11 @@ FROM node:20.14.0-alpine AS maindeps
 WORKDIR /app
 
 ARG proxy
+ARG ENV_TYPE
+ARG TRADE_TYPE
+
+ENV APP_ENV=$ENV_TYPE
+ENV TRADE_MODE=$TRADE_TYPE
 
 RUN [ -z "$proxy" ] || sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories
 RUN apk add --no-cache libc6-compat && npm install -g pnpm@9.4.0
@@ -11,6 +16,7 @@ RUN apk add --no-cache libc6-compat && npm install -g pnpm@9.4.0
 COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY ./packages ./packages
 COPY ./projects/app/package.json ./projects/app/package.json
+COPY ./projects/app/.env.${ENV_TYPE}.${TRADE_TYPE} ./projects/app/.env
 
 RUN [ -f pnpm-lock.yaml ] || (echo "Lockfile not found." && exit 1)
 
@@ -27,7 +33,6 @@ WORKDIR /app
 
 ARG proxy
 ARG base_url
-ARG DEPLOY_ENV
 
 # copy common node_modules and one project node_modules
 COPY package.json pnpm-workspace.yaml .npmrc tsconfig.json ./
@@ -35,7 +40,6 @@ COPY --from=maindeps /app/node_modules ./node_modules
 COPY --from=maindeps /app/packages ./packages
 COPY ./projects/app ./projects/app
 COPY --from=maindeps /app/projects/app/node_modules ./projects/app/node_modules
-COPY ./projects/app/.env.${DEPLOY_ENV} ./projects/app/.env
 
 RUN [ -z "$proxy" ] || sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories
 

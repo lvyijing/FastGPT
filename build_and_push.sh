@@ -2,7 +2,7 @@
 
 # 配置变量
 IMAGE_NAME="registry.cn-hangzhou.aliyuncs.com/fastgpt/fastgpt"  # 镜像名称
-IMAGE_TAG="v4.9.1_1.2"           # 镜像标签，默认为 latest
+IMAGE_TAG="v4.9.1_1.4"           # 镜像标签，默认为 latest
 DOCKERFILE_PATH="."          # Dockerfile 路径，默认为当前目录
 REGISTRY_URL="crpi-b71hgy3y7yanyni3.cn-qingdao.personal.cr.aliyuncs.com"  # 阿里云容器镜像服务的 Registry 地址
 NAMESPACE="fastgpt_elitech"   # 阿里云容器镜像服务的命名空间
@@ -19,10 +19,29 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# 用户选择环境
+echo "请选择环境："
+echo "1) 正式外贸"
+echo "2) 正式内贸"
+echo "3) 测试外贸"
+echo "4) 测试内贸"
+read -p "输入数字 (1-4): " choice
+
+# 映射选择到参数
+case $choice in
+  1) ENV_TYPE="prod"; TRADE_TYPE="en" ;;
+  2) ENV_TYPE="prod"; TRADE_TYPE="cn" ;;
+  3) ENV_TYPE="test"; TRADE_TYPE="en" ;;
+  4) ENV_TYPE="test"; TRADE_TYPE="cn" ;;
+  *) echo "无效输入"; exit 1 ;;
+esac
+
 # 构建 Docker 镜像
 echo "开始构建 Docker 镜像..."
-# docker build --platform linux/amd64 -t $IMAGE_NAME:$IMAGE_TAG $DOCKERFILE_PATH --build-arg proxy=taobao --build-arg DEPLOY_ENV=production
-docker build --platform linux/amd64 -t $IMAGE_NAME:$IMAGE_TAG $DOCKERFILE_PATH --build-arg proxy=taobao --build-arg DEPLOY_ENV=development
+docker build --no-cache --platform linux/amd64 -t $IMAGE_NAME:$IMAGE_TAG-$ENV_TYPE-$TRADE_TYPE $DOCKERFILE_PATH \
+  --build-arg proxy=taobao \
+  --build-arg ENV_TYPE=$ENV_TYPE \
+  --build-arg TRADE_TYPE=$TRADE_TYPE \
 
 # 检查镜像是否构建成功
 if [ $? -ne 0 ]; then
@@ -31,9 +50,9 @@ if [ $? -ne 0 ]; then
 fi
 
 # 打标签，将镜像推送到阿里云仓库
-REMOTE_IMAGE="$REGISTRY_URL/$NAMESPACE/$REPO_NAME:$IMAGE_TAG"
+REMOTE_IMAGE="$REGISTRY_URL/$NAMESPACE/$REPO_NAME:$IMAGE_TAG-$ENV_TYPE-$TRADE_TYPE"
 echo "打标签并推送镜像到阿里云仓库: $REMOTE_IMAGE"
-docker tag $IMAGE_NAME:$IMAGE_TAG $REMOTE_IMAGE
+docker tag $IMAGE_NAME:$IMAGE_TAG-$ENV_TYPE-$TRADE_TYPE $REMOTE_IMAGE
 docker push $REMOTE_IMAGE
 
 # 检查镜像是否推送成功

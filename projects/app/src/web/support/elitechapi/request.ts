@@ -7,10 +7,11 @@ import axios, {
 import { clearToken } from '@/web/support/user/auth';
 import { TOKEN_ERROR_CODE } from '@fastgpt/global/common/error/errorCode';
 import { TeamErrEnum } from '@fastgpt/global/common/error/code/team';
+import { useSystemStore } from '../../common/system/useSystemStore';
 import { getWebReqUrl } from '@fastgpt/web/common/system/utils';
 import { i18nT } from '@fastgpt/web/i18n/utils';
+import { getNanoid } from '@fastgpt/global/common/string/tools';
 import { useChatStore } from '@/web/core/chat/context/useChatStore';
-import { log } from 'node:console';
 
 interface ConfigType {
   headers?: { [key: string]: string };
@@ -26,13 +27,65 @@ interface ResponseDataType {
   data: any;
 }
 
+const maxQuantityMap: Record<
+  string,
+  | undefined
+  | {
+      id: string;
+      sign: AbortController;
+    }[]
+> = {};
+
+/* 
+  Every request generates a unique sign
+  If the number of requests exceeds maxQuantity, cancel the earliest request and initiate a new request
+*/
+function checkMaxQuantity({ url, maxQuantity }: { url: string; maxQuantity?: number }) {
+  if (!maxQuantity) return {};
+  const item = maxQuantityMap[url];
+  const id = getNanoid();
+  const sign = new AbortController();
+
+  if (item && item.length > 0) {
+    if (item.length >= maxQuantity) {
+      const firstSign = item.shift();
+      firstSign?.sign.abort();
+    }
+    item.push({ id, sign });
+  } else {
+    maxQuantityMap[url] = [{ id, sign }];
+  }
+  return {
+    id,
+    abortSignal: sign?.signal
+  };
+}
+
+function requestFinish({ signId, url }: { signId?: string; url: string }) {
+  const item = maxQuantityMap[url];
+  if (item) {
+    if (signId) {
+      const index = item.findIndex((item) => item.id === signId);
+      if (index !== -1) {
+        item.splice(index, 1);
+      }
+    }
+    if (item.length <= 0) {
+      delete maxQuantityMap[url];
+    }
+  }
+}
+
 /**
  * 请求开始
  */
 function startInterceptors(config: InternalAxiosRequestConfig): InternalAxiosRequestConfig {
   if (config.headers) {
   }
-
+  config.params = {
+    ...config.params,
+    token: useChatStore.getState().urlParams.token
+  };
   return config;
 }
 
@@ -52,7 +105,7 @@ function checkRes(data: ResponseDataType) {
   } else if (data.code < 0 || data.code >= 400) {
     return Promise.reject(data);
   }
-  return data;
+  return data.data;
 }
 
 /**
@@ -92,6 +145,7 @@ function responseError(err: any) {
     data?.statusText === TeamErrEnum.websiteSyncNotEnough ||
     data?.statusText === TeamErrEnum.reRankNotEnough
   ) {
+    useSystemStore.getState().setNotSufficientModalType(data.statusText);
     return Promise.reject(data);
   }
   return Promise.reject(data);
@@ -99,7 +153,10 @@ function responseError(err: any) {
 
 /* 创建请求实例 */
 const instance = axios.create({
-  timeout: 60000 // 超时时间
+  timeout: 60000, // 超时时间
+  headers: {
+    'content-type': 'application/json'
+  }
 });
 
 /* 请求拦截 */
@@ -120,21 +177,22 @@ function request(
     }
   }
 
+  const { id: signId, abortSignal } = checkMaxQuantity({ url, maxQuantity });
+
   return instance
     .request({
       baseURL: getWebReqUrl('/api'),
       url,
       method,
-      headers: {
-        Authorization: useChatStore.getState().urlParams.token
-      },
       data: ['POST', 'PUT'].includes(method) ? data : undefined,
       params: !['POST', 'PUT'].includes(method) ? data : undefined,
+      signal: cancelToken?.signal ?? abortSignal,
       withCredentials,
       ...config // 用户自定义配置，可以覆盖前面的配置
     })
     .then((res) => checkRes(res.data))
-    .catch((err) => responseError(err));
+    .catch((err) => responseError(err))
+    .finally(() => requestFinish({ signId, url }));
 }
 
 /**
